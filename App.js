@@ -1,38 +1,25 @@
-// App.js
-// Main screen of the Todo app. Complete TODO 3 to TODO 7.
-// (TODO 1 and TODO 2 are in services/todoService.js)
 
 import React, { useState, useEffect } from "react";
-import {
-  SafeAreaView,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import {SafeAreaView,View,Text,TextInput,TouchableOpacity,FlatList,ActivityIndicator, StyleSheet, Alert,} from "react-native";
+
 import TodoItem from "./components/TodoItem";
 import { addTodo, fetchTodos } from "./services/todoService";
 
 export default function App() {
-  // ---------- State ----------
-  const [text, setText] = useState("");         // what the user is typing
-  const [todos, setTodos] = useState([]);       // todos read from Firestore
-  const [loading, setLoading] = useState(true); // true while data is loading
 
-  // ---------- Load data (Part 4) ----------
-  // TODO 3: Read the todos when the screen opens.
-  //   a) Inside loadTodos: call fetchTodos(), await the result,
-  //      then save it with setTodos(...)
-  //   b) Below loadTodos: use useEffect so loadTodos() runs ONCE
-  //      when the screen opens. The dependency array must be empty: []
+  const [text, setText] = useState("");
+  const [todos, setTodos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // TODO 3: Load todos from Firestore
   const loadTodos = async () => {
     try {
       setLoading(true);
-      // TODO 3a: YOUR CODE HERE
+
+      // TODO 3a
+      const data = await fetchTodos();
+      setTodos(data);
+
     } catch (error) {
       Alert.alert("Error", "Could not load todos: " + error.message);
     } finally {
@@ -40,32 +27,37 @@ export default function App() {
     }
   };
 
-  // TODO 3b: YOUR useEffect HERE
+  // TODO 3b: Load when the app opens
+  useEffect(() => {
+    loadTodos();
+  }, []);
 
-  // ---------- Save data (Part 3) ----------
-  // TODO 4: Make the Add button save a todo.
-  //   a) If text is empty (after .trim()), do nothing and return.
-  //   b) Call addTodo(text.trim()) and await it.
-  // TODO 7: After saving, clear the input box with setText("")
-  //   and reload the list by calling loadTodos().
+  // TODO 4: Save a new todo
   const handleAdd = async () => {
-    // TODO 4a: YOUR CODE HERE
+
+    // TODO 4a: Check for empty input
+    if (text.trim() === "") {
+      return;
+    }
 
     try {
-      // TODO 4b: YOUR CODE HERE
+      // TODO 4b: Save to Firestore
+      await addTodo(text.trim());
 
-      // TODO 7: YOUR CODE HERE
+      // TODO 7: Clear input and reload list
+      setText("");
+      await loadTodos();
+
     } catch (error) {
       Alert.alert("Error", "Could not save todo: " + error.message);
     }
   };
 
-  // ---------- Screen ----------
   return (
     <SafeAreaView style={styles.container}>
+
       <Text style={styles.header}>My Todos</Text>
 
-      {/* Input row */}
       <View style={styles.inputRow}>
         <TextInput
           style={styles.input}
@@ -73,32 +65,57 @@ export default function App() {
           value={text}
           onChangeText={setText}
         />
-        <TouchableOpacity style={styles.button} onPress={handleAdd}>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleAdd}
+        >
           <Text style={styles.buttonText}>Add</Text>
         </TouchableOpacity>
       </View>
 
-      {/* TODO 5: Replace the placeholder below with a FlatList that shows the todos.
-          - data={todos}
-          - keyExtractor={(item) => item.id}
-          - renderItem renders <TodoItem title={item.title} completed={item.completed} />
-      */}
-
-      {/* TODO 6: Handle loading and empty states.
-          - If loading is true, show <ActivityIndicator size="large" /> instead of the list.
-          - If loading is false and todos is empty, show:
+      {/* TODO 5 and TODO 6 */}
+      {loading ? (
+        <ActivityIndicator size="large" />
+      ) : (
+        <FlatList
+          data={todos}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TodoItem
+              title={item.title}
+              completed={item.completed}
+            />
+          )}
+          ListEmptyComponent={
             <Text style={styles.empty}>No todos yet</Text>
-      */}
-      <Text style={styles.empty}>List goes here</Text>
+          }
+          refreshing={loading}
+          onRefresh={loadTodos}
+        />
+      )}
+
     </SafeAreaView>
   );
 }
 
-// ---------- Styles (provided) ----------
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f2f4f8", padding: 16, paddingTop: 48 },
-  header: { fontSize: 28, fontWeight: "bold", marginBottom: 16, color: "#1a1a2e" },
-  inputRow: { flexDirection: "row", marginBottom: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: "#f2f4f8",
+    padding: 16,
+    paddingTop: 48,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 16,
+    color: "#1a1a2e",
+  },
+  inputRow: {
+    flexDirection: "row",
+    marginBottom: 16,
+  },
   input: {
     flex: 1,
     backgroundColor: "#fff",
@@ -114,6 +131,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     justifyContent: "center",
   },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  empty: { textAlign: "center", color: "#888", marginTop: 40, fontSize: 16 },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  empty: {
+    textAlign: "center",
+    color: "#888",
+    marginTop: 40,
+    fontSize: 16,
+  },
 });
